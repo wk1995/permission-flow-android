@@ -7,15 +7,37 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.shreyaspatil.permissionflow.compose.rememberMultiplePermissionState
+import dev.shreyaspatil.permissionflow.compose.rememberPermissionFlowRequestLauncher
 
 @Composable
 fun PermissionListScreen(viewModel: MainViewModel) {
+
+    val permissions = arrayOf(
+        android.Manifest.permission.CAMERA,
+        android.Manifest.permission.READ_EXTERNAL_STORAGE,
+        android.Manifest.permission.READ_CALL_LOG,
+        android.Manifest.permission.READ_CONTACTS,
+        android.Manifest.permission.READ_PHONE_STATE,
+    )
+    val permissionLauncher = rememberPermissionFlowRequestLauncher()
     val context = LocalContext.current
-    val permissionList by viewModel.permissionList.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) {
-        viewModel.initAllPermissionsWithState(context)
-    }
-    PermissionListScreen_(permissionList)
+//    val permissionList by viewModel.permissionList.collectAsStateWithLifecycle()
+    val state by rememberMultiplePermissionState(
+        *permissions
+    )
+//    LaunchedEffect(Unit) {
+//        viewModel.initDeclaredPermissions(context)
+//    }
+
+    PermissionListScreen_(
+        viewModel.getPermissionBean(context, state.permissions),
+        changePermission = { permission, g ->
+            if (g) {
+                permissionLauncher.launch(arrayOf(permission))
+            }
+
+        })
 }
 
 

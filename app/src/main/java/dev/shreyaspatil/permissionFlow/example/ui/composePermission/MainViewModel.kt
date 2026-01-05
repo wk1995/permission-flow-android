@@ -4,25 +4,68 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import dev.shreyaspatil.permissionFlow.PermissionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MainViewModel : ViewModel() {
 
-    private val _permissionList = MutableStateFlow(emptyList<PermissionUiBean>())
+    private val _permissionList = MutableStateFlow(emptyList<String>())
     val permissionList = _permissionList.asStateFlow()
+
+    private val _permissionBeanList = MutableStateFlow(emptyList<PermissionUiBean>())
+    val permissionBean = _permissionBeanList.asStateFlow()
+
+
+    fun getPermissionBean(context:Context,permissionStates:List<PermissionState>):List<PermissionUiBean>{
+        Log.d(
+            "wkkk",
+            "sdk=${Build.VERSION.SDK_INT}, target=${context.applicationInfo.targetSdkVersion}"
+        )
+        val pm = context.packageManager
+        return permissionStates.map {
+            val systemGranted = getPermissionGrantState(context, it.permission)
+            Log.d(
+                "wkkk",
+                "permission： ${it.permission} systemGranted => $systemGranted  Granted ： ${it.isGranted} isRationaleRequired:  ${it.isRationaleRequired}"
+            )
+            val permissionInfo = getPermissionInfo(context, it.permission)
+
+            val protection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                permissionInfo?.protection
+            } else {
+
+            }
+            val protectionLevel = permissionInfo?.protectionLevel
+            val getProtectionFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                permissionInfo?.protectionFlags
+            } else {
+
+            }
+            PermissionUiBean(
+                permission = it.permission,
+                label = permissionInfo?.loadLabel(pm)?.toString() ?: "unKnow",
+                description = permissionInfo?.loadDescription(pm)?.toString(),
+                granted = systemGranted,
+            )
+        }
+    }
+
 
     /**
      * 应用“声明支持”的全部权限,不关心是否已授权
      * */
-    private fun getDeclaredPermissions(context: Context): List<String> {
+    fun initDeclaredPermissions(context: Context) {
+        Log.i("wkkk","initDeclaredPermissions")
         val pm = context.packageManager
         val pkgInfo = pm.getPackageInfo(
             context.packageName, PackageManager.GET_PERMISSIONS
         )
-        return pkgInfo.requestedPermissions?.toList() ?: emptyList()
+        _permissionList.value = pkgInfo.requestedPermissions?.toList() ?: emptyList()
+        Log.i("wkkk","${_permissionList.value.size}")
     }
 
     private fun getPermissionGrantState(
@@ -33,9 +76,11 @@ class MainViewModel : ViewModel() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+
     fun initAllPermissionsWithState(context: Context) {
         val pm = context.packageManager
-        val result = getDeclaredPermissions(context).map { perm ->
+        initDeclaredPermissions(context)
+        val result = permissionList.value.map { perm ->
             val granted = getPermissionGrantState(context, perm)
             val permissionInfo = getPermissionInfo(context, perm)
 
@@ -57,7 +102,7 @@ class MainViewModel : ViewModel() {
                 granted = granted,
             )
         }
-        _permissionList.value = result
+        _permissionBeanList.value = result
     }
 
     /**
