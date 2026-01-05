@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.callbackFlow
  */
 internal class ApplicationStateMonitor(private val application: Application) {
     private var currentActivity: WeakReference<Activity>? = null
+    private val rationaleCache = mutableMapOf<String, Boolean?>()
 
     /** Returns the current state of the permission. */
     fun getPermissionState(permission: String): PermissionState {
@@ -46,7 +47,12 @@ internal class ApplicationStateMonitor(private val application: Application) {
     /** Returns whether the permission should show rationale or not. */
     private fun shouldShowPermissionRationale(permission: String): Boolean? {
         val activity = currentActivity?.get() ?: return null
-        return ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        val rationale = ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        if (rationaleCache[permission] == true && !rationale) {
+            return null
+        }
+        rationaleCache[permission] = rationale
+        return rationale
     }
 
     /** Returns whether the permission is granted or not. */
