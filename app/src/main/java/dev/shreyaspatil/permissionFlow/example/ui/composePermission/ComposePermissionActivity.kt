@@ -26,11 +26,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import dev.shreyaspatil.permissionflow.compose.rememberMultiplePermissionState
 import dev.shreyaspatil.permissionflow.compose.rememberPermissionFlowRequestLauncher
 
@@ -38,9 +40,17 @@ import dev.shreyaspatil.permissionflow.compose.rememberPermissionFlowRequestLaun
  * The example activity which demonstrates the usage of PermissionFlow APIs in the Jetpack Compose
  */
 class ComposePermissionActivity : ComponentActivity() {
+    val viewModel by lazy {
+        ViewModelProvider(this)[MainViewModel::class]
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MainScreen() }
+        setContent {
+            LaunchedEffect(Unit) {
+                viewModel.initAllPermissionsWithState(this@ComposePermissionActivity)
+            }
+            PermissionListScreen(viewModel)
+        }
     }
 }
 
