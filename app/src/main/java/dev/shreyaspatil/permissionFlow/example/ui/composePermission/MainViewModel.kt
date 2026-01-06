@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MainViewModel : ViewModel() {
-
+    companion object{
+        private const val TAG = "MainViewModel"
+    }
     private val _permissionList = MutableStateFlow(emptyList<String>())
     val permissionList = _permissionList.asStateFlow()
 
@@ -22,15 +24,15 @@ class MainViewModel : ViewModel() {
 
     fun getPermissionBean(context:Context,permissionStates:List<PermissionState>):List<PermissionUiBean>{
         Log.d(
-            "wkkk",
+            TAG,
             "sdk=${Build.VERSION.SDK_INT}, target=${context.applicationInfo.targetSdkVersion}"
         )
         val pm = context.packageManager
         return permissionStates.map {
-            val systemGranted = getPermissionGrantState(context, it.permission)
+            val systemGranted = it.isGranted
             Log.d(
-                "wkkk",
-                "permission： ${it.permission} systemGranted => $systemGranted  Granted ： ${it.isGranted} isRationaleRequired:  ${it.isRationaleRequired}"
+                TAG,
+                "permission： ${it.permission} Granted ： ${it.isGranted} isRationaleRequired:  ${it.isRationaleRequired}"
             )
             val permissionInfo = getPermissionInfo(context, it.permission)
 
@@ -59,13 +61,11 @@ class MainViewModel : ViewModel() {
      * 应用“声明支持”的全部权限,不关心是否已授权
      * */
     fun initDeclaredPermissions(context: Context) {
-        Log.i("wkkk","initDeclaredPermissions")
         val pm = context.packageManager
         val pkgInfo = pm.getPackageInfo(
             context.packageName, PackageManager.GET_PERMISSIONS
         )
         _permissionList.value = pkgInfo.requestedPermissions?.toList() ?: emptyList()
-        Log.i("wkkk","${_permissionList.value.size}")
     }
 
     private fun getPermissionGrantState(
