@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import dev.shreyaspatil.permissionFlow.PermissionGrantType
 import dev.shreyaspatil.permissionFlow.PermissionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -61,7 +62,7 @@ class MainViewModel : ViewModel() {
                 permission = it.permission,
                 label = permissionInfo?.loadLabel(pm)?.toString() ?: "unKnow",
                 description = permissionInfo?.loadDescription(pm)?.toString(),
-                granted = systemGranted,
+                granted = it.permissionGrantType == PermissionGrantType.GRANTED,
             )
         }
     }
