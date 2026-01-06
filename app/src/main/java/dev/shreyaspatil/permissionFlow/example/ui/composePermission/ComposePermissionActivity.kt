@@ -15,7 +15,11 @@
  */
 package dev.shreyaspatil.permissionFlow.example.ui.composePermission
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.ViewModelProvider
@@ -30,8 +34,19 @@ class ComposePermissionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PermissionListScreen(viewModel)
+            PermissionListScreen(viewModel){
+                openAppPermissionSettings(this)
+            }
         }
+    }
+
+
+    fun openAppPermissionSettings(context: Context) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
     }
 }
 

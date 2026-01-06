@@ -2,16 +2,14 @@ package dev.shreyaspatil.permissionFlow.example.ui.composePermission
 
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.shreyaspatil.permissionflow.compose.rememberMultiplePermissionState
 import dev.shreyaspatil.permissionflow.compose.rememberPermissionFlowRequestLauncher
 
 @Composable
-fun PermissionListScreen(viewModel: MainViewModel) {
+fun PermissionListScreen(viewModel: MainViewModel, goSettings: (String) -> Unit = {}) {
 
     val permissions = arrayOf(
         android.Manifest.permission.CAMERA,
@@ -34,7 +32,13 @@ fun PermissionListScreen(viewModel: MainViewModel) {
         viewModel.getPermissionBean(context, state.permissions),
         changePermission = { permission, g ->
             if (g) {
-                permissionLauncher.launch(arrayOf(permission))
+                val state = viewModel.getPermissionState(permission)
+                if (state?.isRationaleRequired == null) {
+                    goSettings(permission)
+                } else {
+                    permissionLauncher.launch(arrayOf(permission))
+
+                }
             }
 
         })

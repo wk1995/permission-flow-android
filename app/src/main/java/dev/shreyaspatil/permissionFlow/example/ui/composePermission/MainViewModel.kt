@@ -12,23 +12,33 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MainViewModel : ViewModel() {
-    companion object{
+    companion object {
         private const val TAG = "MainViewModel"
     }
+
     private val _permissionList = MutableStateFlow(emptyList<String>())
     val permissionList = _permissionList.asStateFlow()
 
     private val _permissionBeanList = MutableStateFlow(emptyList<PermissionUiBean>())
     val permissionBean = _permissionBeanList.asStateFlow()
 
+    private val permissionStateCache by lazy {
+        mutableMapOf<String, PermissionState>()
+    }
 
-    fun getPermissionBean(context:Context,permissionStates:List<PermissionState>):List<PermissionUiBean>{
+    fun getPermissionState(permission: String): PermissionState? {
+        return permissionStateCache[permission]
+    }
+
+    fun getPermissionBean(
+        context: Context, permissionStates: List<PermissionState>
+    ): List<PermissionUiBean> {
         Log.d(
-            TAG,
-            "sdk=${Build.VERSION.SDK_INT}, target=${context.applicationInfo.targetSdkVersion}"
+            TAG, "sdk=${Build.VERSION.SDK_INT}, target=${context.applicationInfo.targetSdkVersion}"
         )
         val pm = context.packageManager
         return permissionStates.map {
+            permissionStateCache[it.permission] = it
             val systemGranted = it.isGranted
             Log.d(
                 TAG,
