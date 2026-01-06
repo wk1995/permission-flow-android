@@ -15,7 +15,12 @@
  */
 package dev.shreyaspatil.permissionFlow.watchmen
 
+import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import dev.shreyaspatil.permissionFlow.MultiplePermissionState
+import dev.shreyaspatil.permissionFlow.PermissionGrantType
 import dev.shreyaspatil.permissionFlow.PermissionState
 import dev.shreyaspatil.permissionFlow.internal.ApplicationStateMonitor
 import dev.shreyaspatil.permissionFlow.utils.stateFlow.combineStates
@@ -29,14 +34,28 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 
+
+private val Context.permStore by preferencesDataStore(name = "perm_store")
+private fun requestedKey(permission: String) =
+    booleanPreferencesKey("requested_$permission")
+
+suspend fun markGrantPermission(context: Context, permission: String, hasRequest: Boolean) {
+    context.permStore.edit { it[requestedKey(permission)] = hasRequest }
+}
+
+suspend fun wasRequested(context: Context, permission: String): Boolean {
+    return context.permStore.data.first()[requestedKey(permission)] ?: false
+}
 /** A watchmen which keeps watching state changes of permissions and events of permissions. */
 @Suppress("unused")
 internal class PermissionWatchmen(
+    private val context: Context,
     private val appStateMonitor: ApplicationStateMonitor,
     dispatcher: CoroutineDispatcher,
 ) {
@@ -72,7 +91,15 @@ internal class PermissionWatchmen(
     fun notifyPermissionsChanged(permissions: Array<String>) {
         watchmenScope.launch {
             permissions.forEach { permission ->
-                permissionEvents.emit(appStateMonitor.getPermissionState(permission))
+                val permissionState = appStateMonitor.getPermissionState(
+                    permission, wasRequested(context, permission)
+                )
+                markGrantPermission(
+                    context,
+                    permission,
+                    permissionState.permissionGrantType != PermissionGrantType.GRANTED
+                )
+                permissionEvents.emit(permissionState)
             }
         }
     }

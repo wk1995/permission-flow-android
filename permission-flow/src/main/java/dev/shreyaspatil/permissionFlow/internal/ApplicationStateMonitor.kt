@@ -24,6 +24,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import dev.shreyaspatil.permissionFlow.PermissionGrantType
 import dev.shreyaspatil.permissionFlow.PermissionState
 import java.lang.ref.WeakReference
 import kotlinx.coroutines.channels.awaitClose
@@ -37,10 +38,24 @@ internal class ApplicationStateMonitor(private val application: Application) {
     private var currentActivity: WeakReference<Activity>? = null
 
     /** Returns the current state of the permission. */
-    fun getPermissionState(permission: String): PermissionState {
+    fun getPermissionState(permission: String, hasDenied: Boolean = false): PermissionState {
         val isGranted = isPermissionGranted(permission)
         val isRationaleRequired = shouldShowPermissionRationale(permission)
-        return PermissionState(permission, isGranted, isRationaleRequired)
+        return PermissionState(
+            permission, isGranted, isRationaleRequired, if (isGranted) {
+                PermissionGrantType.GRANTED
+            } else {
+                if (isRationaleRequired == false) {
+                    if (hasDenied) {
+                        PermissionGrantType.DENIED_PERMANENTLY
+                    } else {
+                        PermissionGrantType.NOT_REQUESTED
+                    }
+                } else {
+                    PermissionGrantType.DENIED
+                }
+            }
+        )
     }
 
     /** Returns whether the permission should show rationale or not. */

@@ -24,9 +24,32 @@ package dev.shreyaspatil.permissionFlow
  */
 data class PermissionState(
     val permission: String,
-    val isGranted: Boolean,
-    val isRationaleRequired: Boolean?,
+    @Deprecated("") val isGranted: Boolean,
+    @Deprecated("") val isRationaleRequired: Boolean?,
+    val permissionGrantType: PermissionGrantType = PermissionGrantType.NOT_REQUESTED
 )
+
+enum class PermissionGrantType {
+    /**
+     * 有权限
+     * */
+    GRANTED,
+
+    /**
+     * 没申请过权限
+     * */
+    NOT_REQUESTED,
+
+    /**
+     * 没权限
+     * */
+    DENIED,
+
+    /**
+     * 永久拒绝权限
+     * */
+    DENIED_PERMANENTLY
+}
 
 /**
  * State model for multiple permissions

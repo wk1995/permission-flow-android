@@ -64,11 +64,11 @@ constructor(
         fun init(context: Context, dispatcher: CoroutineDispatcher) {
             if (instance == null) {
                 val monitor = ApplicationStateMonitor(context.applicationContext as Application)
-                val watchmen =
-                    PermissionWatchmen(
-                        appStateMonitor = monitor,
-                        dispatcher = dispatcher,
-                    )
+                val watchmen = PermissionWatchmen(
+                    context = context,
+                    appStateMonitor = monitor,
+                    dispatcher = dispatcher,
+                )
                 instance = PermissionFlowImpl(watchmen)
             }
         }
