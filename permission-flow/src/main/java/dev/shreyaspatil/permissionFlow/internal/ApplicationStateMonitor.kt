@@ -17,6 +17,7 @@ package dev.shreyaspatil.permissionFlow.internal
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -26,9 +27,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import dev.shreyaspatil.permissionFlow.PermissionGrantType
 import dev.shreyaspatil.permissionFlow.PermissionState
-import java.lang.ref.WeakReference
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import java.lang.ref.WeakReference
 
 /**
  * Monitors the state of the application and provides information about the info and state of
@@ -36,6 +37,20 @@ import kotlinx.coroutines.flow.callbackFlow
  */
 internal class ApplicationStateMonitor(private val application: Application) {
     private var currentActivity: WeakReference<Activity>? = null
+
+    companion object {
+        private const val SP_NAME = "rationale_monitor"
+    }
+
+    fun markRationale(permission: String, rationale: Boolean) {
+        val sp = application.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        sp.edit().putBoolean(permission, rationale).apply()
+    }
+
+    fun wasRequested(permission: String): Boolean {
+        val sp = application.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        return sp.getBoolean(permission, false)
+    }
 
     /** Returns the current state of the permission. */
     fun getPermissionState(permission: String, hasDenied: Boolean = false): PermissionState {
@@ -61,7 +76,12 @@ internal class ApplicationStateMonitor(private val application: Application) {
     /** Returns whether the permission should show rationale or not. */
     private fun shouldShowPermissionRationale(permission: String): Boolean? {
         val activity = currentActivity?.get() ?: return null
-        return ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        val rationale = ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        if (wasRequested(permission) && !rationale) {
+            return null
+        }
+        markRationale(permission, rationale)
+        return rationale
     }
 
     /** Returns whether the permission is granted or not. */

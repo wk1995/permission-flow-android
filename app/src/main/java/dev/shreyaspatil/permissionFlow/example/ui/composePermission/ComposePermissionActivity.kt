@@ -15,65 +15,38 @@
  */
 package dev.shreyaspatil.permissionFlow.example.ui.composePermission
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import dev.shreyaspatil.permissionflow.compose.rememberMultiplePermissionState
-import dev.shreyaspatil.permissionflow.compose.rememberPermissionFlowRequestLauncher
+import androidx.lifecycle.ViewModelProvider
 
 /**
  * The example activity which demonstrates the usage of PermissionFlow APIs in the Jetpack Compose
  */
 class ComposePermissionActivity : ComponentActivity() {
+    val viewModel by lazy {
+        ViewModelProvider(this)[MainViewModel::class]
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MainScreen() }
+        setContent {
+            PermissionListScreen(viewModel){
+                openAppPermissionSettings(this)
+            }
+        }
+    }
+
+
+    fun openAppPermissionSettings(context: Context) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
     }
 }
 
-private val permissions =
-    arrayOf(
-        android.Manifest.permission.CAMERA,
-        android.Manifest.permission.READ_EXTERNAL_STORAGE,
-        android.Manifest.permission.READ_CALL_LOG,
-        android.Manifest.permission.READ_CONTACTS,
-        android.Manifest.permission.READ_PHONE_STATE,
-    )
-
-@Composable
-fun MainScreen() {
-    val permissionLauncher = rememberPermissionFlowRequestLauncher()
-    val state by rememberMultiplePermissionState(*permissions)
-    // or use `rememberPermissionState()` to get the state of a single permission
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Button(onClick = { permissionLauncher.launch(permissions) }) { Text("Request Permissions") }
-
-        Column(modifier = Modifier.background(Color.Green).padding(16.dp)) {
-            Text(text = "Granted Permissions:")
-            Text(text = state.grantedPermissions.joinToString())
-        }
-
-        Column(modifier = Modifier.background(Color.Red).padding(16.dp)) {
-            Text(text = "Denied Permissions:")
-            Text(text = state.deniedPermissions.joinToString())
-        }
-    }
-}
