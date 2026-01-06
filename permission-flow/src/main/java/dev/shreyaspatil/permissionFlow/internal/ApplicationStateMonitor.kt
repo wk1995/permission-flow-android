@@ -17,6 +17,7 @@ package dev.shreyaspatil.permissionFlow.internal
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -25,9 +26,9 @@ import androidx.annotation.VisibleForTesting
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import dev.shreyaspatil.permissionFlow.PermissionState
-import java.lang.ref.WeakReference
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import java.lang.ref.WeakReference
 
 /**
  * Monitors the state of the application and provides information about the info and state of
@@ -35,7 +36,20 @@ import kotlinx.coroutines.flow.callbackFlow
  */
 internal class ApplicationStateMonitor(private val application: Application) {
     private var currentActivity: WeakReference<Activity>? = null
-    private val rationaleCache = mutableMapOf<String, Boolean?>()
+
+    companion object {
+        private const val SP_NAME = "rationale_monitor"
+    }
+
+    fun markRationale(permission: String, rationale: Boolean) {
+        val sp = application.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        sp.edit().putBoolean(permission, rationale).apply()
+    }
+
+    fun wasRequested(permission: String): Boolean {
+        val sp = application.getSharedPreferences(SP_NAME, Context.MODE_PRIVATE)
+        return sp.getBoolean(permission, false)
+    }
 
     /** Returns the current state of the permission. */
     fun getPermissionState(permission: String): PermissionState {
@@ -48,10 +62,10 @@ internal class ApplicationStateMonitor(private val application: Application) {
     private fun shouldShowPermissionRationale(permission: String): Boolean? {
         val activity = currentActivity?.get() ?: return null
         val rationale = ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
-        if (rationaleCache[permission] == true && !rationale) {
+        if (wasRequested(permission) && !rationale) {
             return null
         }
-        rationaleCache[permission] = rationale
+        markRationale(permission, rationale)
         return rationale
     }
 
